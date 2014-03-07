@@ -19,8 +19,7 @@ class detect:
 		self.commands_2.append('avconv -i rtsp://admin:linnit@{0}/Streaming/Channels/2 -f image2 -vframes 1 2_{1}.jpg'.format(ip, cid))
 		
 		# Take first image
-		#processes_1 = [subprocess.Popen(cmd, shell=True, stdout=self.FNULL, stderr=subprocess.STDOUT) for cmd in self.commands_1]
-		processes_1 = [subprocess.Popen(cmd, shell=True) for cmd in self.commands_1]
+		processes_1 = [subprocess.Popen(cmd, shell=True, stdout=self.FNULL, stderr=subprocess.STDOUT) for cmd in self.commands_1]
 		
 		# Sleep 1 seconds
 		time.sleep(1)
@@ -42,36 +41,27 @@ class detect:
 
 	def compare(self, cam_ip):
 		print cam_ip
-		#self.takeImage(cam_ip)
+		self.takeImage(cam_ip)
 		img1 = Image.open('1_{0}.jpg'.format(cam_ip.split('.')[-1]))
 		img2 = Image.open('2_{0}.jpg'.format(cam_ip.split('.')[-1]))
 
 		img = ImageChops.difference(img1,img2)
-		#img.save('test_diff2.png') 
+		#img.save('{0}_diff.png'.format(cam_ip.split('.')[-1])) 
 		print self.image_entropy(img)
 
+def main():
+	d = detect()
+	
+	threads = []
+	
+	for ip in d.ips:
+		t = Thread(target=d.compare, args=(ip,))
+		threads.append(t)
+	
+	[x.start() for x in threads]
+	
+	[x.join() for x in threads]
 
-d = detect()
-#d.takeImage()
-def test(ip):
-	print "{0} = {1}".format(ip, time.time())
-	time.sleep(3)
-	print "{0} = {1}".format(ip, time.time())
-
-threads = []
-
-for ip in d.ips:
-	t = Thread(target=d.compare, args=(ip,))
-	threads.append(t)
-
-[x.start() for x in threads]
-
-[x.join() for x in threads]
-
-
-
-
-
-
-
+if __name__ == "__main__":
+	main()
 
