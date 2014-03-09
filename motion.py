@@ -1,4 +1,5 @@
-import os
+#!/usr/bin/python
+import os, sys
 import time
 import subprocess
 from PIL import Image, ImageChops
@@ -8,7 +9,7 @@ from threading import Thread
 
 class detect:
 	def __init__(self):
-		self.ips = ['192.168.0.61', '192.168.0.62']
+		self.ips = ['192.168.0.61']
 		self.commands_1 = []
 		self.commands_2 = []
 		self.FNULL = open(os.devnull, 'w')
@@ -40,27 +41,44 @@ class detect:
 		return -np.sum(prob*np.log2(prob))
 
 	def compare(self, cam_ip):
-		print cam_ip
+		red = '\033[91m'
+		green = '\033[92m'
+		reset = '\033[0m'
 		self.takeImage(cam_ip)
 		img1 = Image.open('1_{0}.jpg'.format(cam_ip.split('.')[-1]))
 		img2 = Image.open('2_{0}.jpg'.format(cam_ip.split('.')[-1]))
 
 		img = ImageChops.difference(img1,img2)
 		#img.save('{0}_diff.png'.format(cam_ip.split('.')[-1])) 
-		print self.image_entropy(img)
+		image_ent = self.image_entropy(img)
+		if image_ent < 1.5:
+			colour = green
+		else:
+			colour = red
+		print "IP: {0}\t Entropy: {1}{2}{3}".format(cam_ip, colour, image_ent, reset)
+		# Remove images
+		os.unlink('1_{0}.jpg'.format(cam_ip.split('.')[-1]))
+		os.unlink('2_{0}.jpg'.format(cam_ip.split('.')[-1]))
+		
 
 def main():
 	d = detect()
 	
-	threads = []
-	
-	for ip in d.ips:
-		t = Thread(target=d.compare, args=(ip,))
-		threads.append(t)
-	
-	[x.start() for x in threads]
-	
-	[x.join() for x in threads]
+	while True:
+		try:
+			threads = []
+			for ip in d.ips:
+				t = Thread(target=d.compare, args=(ip,))
+				threads.append(t)
+			
+			[x.start() for x in threads]
+			
+			[x.join() for x in threads]
+		except KeyboardInterrupt:
+			print "Keyboard Interrupt received"
+			for x in threads:
+				x.kill_received = True 
+			sys.exit()
 
 if __name__ == "__main__":
 	main()
