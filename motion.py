@@ -6,6 +6,7 @@ from PIL import Image, ImageChops
 import math
 import numpy as np
 from threading import Thread
+import shutil
 
 class detect:
 	def __init__(self):
@@ -41,7 +42,6 @@ class detect:
 			if self.kill == True: return 0
 			time.sleep(2)
 			imgno1, imgno2 = "%03d" % (i,), "%03d" % (i+1,)
-			print imgno1, imgno2			
 
 			img1 = Image.open('image_{0}-{1}.jpg'.format(cam_ip.split('.')[-1], imgno1) )
 			img2 = Image.open('image_{0}-{1}.jpg'.format(cam_ip.split('.')[-1], imgno2) )
@@ -49,12 +49,19 @@ class detect:
 			img = ImageChops.difference(img1,img2)
 			#img.save('{0}_diff.png'.format(cam_ip.split('.')[-1])) 
 			image_ent = self.image_entropy(img)
-			if image_ent < 1.5:
+			if image_ent < 0.8:
 				colour = green
 			else:
 				colour = red
-				img.save('{0}_{1}.png'.format(cam_ip.split('.')[-1], int(time.time()) ))
-				print 'Motion detected - saving image to {0}_{1}.png'.format(cam_ip.split('.')[-1], int(time.time()) )
+				motionTime = int(time.time())
+				diff = ImageChops.difference(img1, img2)
+				print diff.getbbox()
+				# Copy/Save diff images
+				img.save('{0}_{1}.png'.format(cam_ip.split('.')[-1], motionTime ))
+				shutil.copy2('image_{0}-{1}.jpg'.format(cam_ip.split('.')[-1], imgno1), '{0}_1_{1}.jpg'.format(cam_ip.split('.')[-1], motionTime ))
+				shutil.copy2('image_{0}-{1}.jpg'.format(cam_ip.split('.')[-1], imgno2), '{0}_1_{1}.jpg'.format(cam_ip.split('.')[-1], motionTime ))
+
+				print '{0}Motion detected - saving image to {1}_{2}.png{3}'.format(red, cam_ip.split('.')[-1], int(motionTime), reset)
 			print "IP: {0}\t Entropy: {1}{2}{3}".format(cam_ip, colour, image_ent, reset)
 			# Remove images
 			os.unlink('image_{0}-{1}.jpg'.format(cam_ip.split('.')[-1], imgno1))
